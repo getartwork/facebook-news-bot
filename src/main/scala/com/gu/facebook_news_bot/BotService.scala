@@ -13,7 +13,7 @@ import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException
 import com.gu.cm.Mode
 import com.gu.facebook_news_bot.briefing.MorningBriefingPoller
 import com.gu.facebook_news_bot.models.{MessageFromFacebook, MessageToFacebook, User}
-import com.gu.facebook_news_bot.services.{Capi, CapiImpl, Facebook, FacebookImpl}
+import com.gu.facebook_news_bot.services._
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import io.circe.generic.auto._
 import com.gu.facebook_news_bot.state.StateHandler
@@ -175,6 +175,8 @@ object Bot extends App with BotService {
   val poller = PartialFunction.condOpt(BotConfig.stage != Mode.Dev) {
     case true => system.actorOf(MorningBriefingPoller.props(userStore, capi, facebook))
   }
+
+  SearchTopic.warmUp
 
   val bindingFuture = Http().bindAndHandle(routes, "0.0.0.0", BotConfig.port)
 }

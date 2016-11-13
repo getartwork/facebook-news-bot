@@ -2,11 +2,12 @@ package com.gu.facebook_news_bot.state
 
 import com.gu.facebook_news_bot.BotConfig
 import com.gu.facebook_news_bot.models.{Id, MessageFromFacebook, MessageToFacebook, User}
-import com.gu.facebook_news_bot.services.{Capi, Facebook, Topic}
+import com.gu.facebook_news_bot.services.{Capi, Facebook, SearchTopic, Topic}
 import com.gu.facebook_news_bot.state.StateHandler.Result
 import com.gu.facebook_news_bot.utils.{FacebookMessageBuilder, ResponseText}
 import com.gu.facebook_news_bot.utils.FacebookMessageBuilder.{CarouselSize, contentToCarousel}
 import io.circe.generic.auto._
+import org.clulab.processors.corenlp.CoreNLPProcessor
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -79,6 +80,7 @@ case object MainState extends State {
   def getHeadlines(user: User, capi: Capi, variant: Option[String] = None): Future[Result] = carousel(user, HeadlinesType, None, 0, capi, variant)
 
   private def processEvent(user: User, event: Event, capi: Capi, facebook: Facebook): Future[Result] = {
+    println(s"processEvent: $event")
     val result = event match {
       case NewContentEvent(maybeContentType, maybeTopic) =>
         //Either have a new contentType, or use an existing contentType
@@ -141,8 +143,8 @@ case object MainState extends State {
     val text = raw.toLowerCase
     val event = text match {
       case Patterns.more(_,_) => Some(MoreContentEvent)
-      case Patterns.headlines(_,_,_) => Some(NewContentEvent(contentType = Some(HeadlinesType), topic = Topic.getTopic(text)))
-      case Patterns.popular(_,_) => Some(NewContentEvent(contentType = Some(MostViewedType), topic = Topic.getTopic(text)))
+      case Patterns.headlines(_,_,_) => Some(NewContentEvent(contentType = Some(HeadlinesType), topic = Topic.getTopic(raw)))
+      case Patterns.popular(_,_) => Some(NewContentEvent(contentType = Some(MostViewedType), topic = Topic.getTopic(raw)))
       case Patterns.greeting(_,_,_) => Some(GreetingEvent)
       case Patterns.thanks(_,_,_) => Some(ThanksEvent)
       case Patterns.goodbye(_,_,_) => Some(GoodbyeEvent)
@@ -158,20 +160,34 @@ case object MainState extends State {
 
     event.orElse(
       //Does it contain a topic?
-      Topic.getTopic(text).map { topic =>
+      Topic.getTopic(raw).map { topic =>
         NewContentEvent(contentType = Some(HeadlinesType), topic = Some(topic))
       }
     )
   }
 
   private def carousel(user: User, contentType: ContentType, topic: Option[Topic], offset: Int, capi: Capi, variant: Option[String] = None): Future[Result] = {
+    val standardTopic = topic.filter {
+      case SearchTopic(_) => false
+      case _ => true
+    }
     val futureCarousel = contentType match {
-      case MostViewedType => capi.getMostViewed(user.front, topic) map (contentToCarousel(_, offset, user.front, topic.map(_.name), variant))
-      case HeadlinesType => capi.getHeadlines(user.front, topic) map (contentToCarousel(_, offset, user.front, topic.map(_.name), variant))
+      case MostViewedType => capi.getMostViewed(user.front, topic) map (contentToCarousel(_, offset, user.front, standardTopic.map(_.name), variant))
+      case HeadlinesType => capi.getHeadlines(user.front, topic) map (contentToCarousel(_, offset, user.front, standardTopic.map(_.name), variant))
     }
 
     futureCarousel map {
       case Some(carousel) =>
+        val confirmationMessage: Option[MessageToFacebook] = topic.flatMap {
+          case SearchTopic(terms) => if (offset > 0) None else Some(
+            MessageToFacebook.textMessage(
+              user.ID,
+              s"Here are the latest stories about ${if (terms.length == 1) terms.mkString("") else terms.take(terms.length-1).mkString(", ") + s" and ${terms.last}"}"
+            )
+          )
+          case _ => None
+        }
+
         val updatedUser = user.copy(
           state = Some(Name),
           contentType = Some(contentType.name),
@@ -179,11 +195,11 @@ case object MainState extends State {
           contentOffset = Some(offset)
         )
 
-        val response = MessageToFacebook(
+        val carouselMessage = MessageToFacebook(
           recipient = Id(user.ID),
           message = Some(carousel)
         )
-        (updatedUser, List(response))
+        (updatedUser, List(confirmationMessage, Some(carouselMessage)).flatten)
 
       case None => (user, List(MessageToFacebook.textMessage(user.ID, ResponseText.noResults)))
     }

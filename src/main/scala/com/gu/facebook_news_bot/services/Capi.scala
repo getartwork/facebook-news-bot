@@ -4,10 +4,14 @@ import java.util.concurrent.TimeUnit
 
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.gu.contentapi.client.GuardianContentClient
-import com.gu.contentapi.client.model.ItemQuery
-import com.gu.contentapi.client.model.v1.{Content, ItemResponse}
+import com.gu.contentapi.client.model._
+import com.gu.contentapi.client.model.v1.{Content, ItemResponse, SearchResponse}
 import com.gu.facebook_news_bot.BotConfig
+import com.gu.facebook_news_bot.utils.Loggers.appLogger
+import org.clulab.processors.corenlp.CoreNLPProcessor
+import org.clulab.struct.Tree
 
+import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.matching.Regex
@@ -23,12 +27,25 @@ object CapiImpl extends Capi {
   private lazy val client = new GuardianContentClient(BotConfig.capi.key)
 
   def getHeadlines(edition: String, topic: Option[Topic]): Future[Seq[Content]] =
-    doQuery(basicItemQuery(topic.map(_.getPath(edition)).getOrElse(edition)).showEditorsPicks(), _.editorsPicks)
+    doQuery(edition, topic, _.showEditorsPicks(), _.editorsPicks)
 
   def getMostViewed(edition: String, topic: Option[Topic]): Future[Seq[Content]] =
-    doQuery(basicItemQuery(topic.map(_.getPath(edition)).getOrElse(edition)).showMostViewed(), _.mostViewed)
+    doQuery(edition, topic, _.showMostViewed(), _.mostViewed)
 
-  private def doQuery(query: ItemQuery, getResults: (ItemResponse => Option[Seq[Content]])): Future[Seq[Content]] = {
+  def doQuery(edition: String, topic: Option[Topic], itemQueryModifier: ItemQuery => ItemQuery, getResults: (ItemResponse => Option[Seq[Content]])): Future[Seq[Content]] = {
+    val query: ContentApiQuery = topic.map(_.getQuery(edition)).getOrElse(ItemQuery(edition))
+    query match {
+      case itemQuery @ ItemQuery(_,_) =>
+        val ops = itemQueryModifier andThen commonItemQueryParams
+        doItemQuery(ops(itemQuery), getResults)
+      case searchQuery @ SearchQuery(_) => doSearchQuery(commonSearchQueryParams(searchQuery))
+      case other =>
+        appLogger.error(s"Unexpected ContentApiQuery type: $other")
+        Future.successful(Nil)
+    }
+  }
+
+  private def doItemQuery(query: ItemQuery, getResults: (ItemResponse => Option[Seq[Content]])): Future[Seq[Content]] = {
     CapiCache.get(query.toString).map(cached => Future.successful(cached)).getOrElse {
       client.getResponse(query) map { response: ItemResponse =>
 
@@ -42,12 +59,34 @@ object CapiImpl extends Capi {
     }
   }
 
-  private def basicItemQuery(item: String) = ItemQuery(item)
-    .showFields("standfirst")
+  private def doSearchQuery(query: SearchQuery): Future[Seq[Content]] = {
+    CapiCache.get(query.toString).map(cached => Future.successful(cached)).getOrElse {
+      client.getResponse(query) map { response: SearchResponse =>
+        val results = response.results
+        CapiCache.put(query.toString, results)
+        results
+      }
+    }
+  }
+
+  /**
+    * Duplication here because we can't use a parameterized type,
+    * as capi-client defines e.g. ItemQuery with ShowParameters[ItemQuery]
+    */
+  private def commonItemQueryParams: ItemQuery => ItemQuery =
+    _.showFields("standfirst")
     .tag("type/article")
     .tag("-tone/minutebyminute")
     .showElements("image")
     .pageSize(25)   //Matches the number of editors-picks/most-viewed, in case they aren't available
+
+  private def commonSearchQueryParams: SearchQuery => SearchQuery =
+    _.showFields("standfirst")
+    .tag("type/article")
+    .tag("-tone/minutebyminute")
+    .showElements("image")
+    .pageSize(25)
+
 }
 
 object CapiCache {
@@ -62,7 +101,9 @@ object CapiCache {
 
 object Topic {
   def getTopic(text: String): Option[Topic] = {
-    TopicList.find(topic => topic.pattern.findFirstIn(text).isDefined)
+    val lower = text.toLowerCase
+    val topic = TopicList.find(topic => topic.pattern.findFirstIn(text).isDefined)
+    topic.orElse(SearchTopic(text)) //Uppercase chars can help with finding proper nouns
   }
 
   private val TopicList: List[Topic] = List(
@@ -109,29 +150,29 @@ object Topic {
 sealed trait Topic {
   val terms: List[String]
   lazy val pattern: Regex = ("""(^|\W)(""" + terms.mkString("|") + """)($|\W)""").r.unanchored
-  def getPath(edition: String): String
+  def getQuery(edition: String): ContentApiQuery
   def name: String = terms.headOption.getOrElse("")
 }
 
 case class SectionTopic(terms: List[String], section: String) extends Topic {
-  def getPath(edition: String) = section
+  def getQuery(edition: String) = ItemQuery(section)
 }
 object SectionTopic {
   def apply(section: String): SectionTopic = SectionTopic(List(section), section)
 }
 
 case class EditionSectionTopic(terms: List[String], section: String) extends Topic {
-  def getPath(edition: String) = {
+  def getQuery(edition: String) = ItemQuery({
     if (List("us","au").contains(edition.toLowerCase)) s"$edition/$section"
     else s"uk/$section"   //uk edition by default
-  }
+  })
 }
 object EditionSectionTopic {
   def apply(section: String): EditionSectionTopic = EditionSectionTopic(List(section), section)
 }
 
 case class SectionTagTopic(terms: List[String], section: String, tag: String) extends Topic {
-  def getPath(edition: String) = s"$section/$tag"
+  def getQuery(edition: String) = ItemQuery(s"$section/$tag")
 }
 object SectionTagTopic {
   def apply(section: String, tag: String): SectionTagTopic = SectionTagTopic(List(tag), section, tag)
@@ -140,11 +181,77 @@ object SectionTagTopic {
 case object PoliticsTopic extends Topic {
   val terms = List("politics")
 
-  def getPath(edition: String): String = {
+  def getQuery(edition: String): ItemQuery = ItemQuery({
     edition.toLowerCase match {
       case "us" => "us-news/us-politics"
       case "au" => "australia-news/australian-politics"
       case _ => "politics"
     }
+  })
+}
+
+//Special topic for searching CAPI for a set of terms
+case class SearchTopic(terms: List[String]) extends Topic {
+  def getQuery(edition: String) = {
+    val quoted = terms.map(term => if (term.contains(" ")) "\"" + term + "\"" else term)
+    val q = SearchQuery().q(quoted.mkString(" AND ")).orderBy("newest")
+    println(s"getQuery: $q")
+    q
+  }
+
+  //Store full query params in dynamodb
+  override def name: String = terms.mkString(" AND ")
+}
+object SearchTopic {
+  private val nlpProcessor = new CoreNLPProcessor()
+
+  def warmUp = nlpProcessor.annotate("warm") //warm up now, to avoid delaying the response to the first user
+
+  def apply(text: String): Option[SearchTopic] = {
+    val filtered = text.replaceAll("([hH]+eadlines|[nN]+ews|[sS]+tories|[pP]+opular)","")
+    println(s"Trying to find nouns in '$filtered'")
+    val doc = nlpProcessor.annotate(filtered)
+
+    //Get all lemma->token mappings from all sentences
+    /*val lemmaTokenMaps: List[(String, String)] = doc.sentences.flatMap { sentence =>
+      sentence.lemmas.flatMap(lemmas => sentence.tags.map(tags => lemmas.zip(tags)))
+    }.flatten.toList*/
+
+    val t = doc.sentences.flatMap { sentence =>
+      sentence.syntacticTree.map { tree =>
+
+        //TODO - this needs to be pure!!!
+        def getTerms(tree: Tree): mutable.MutableList[String] = {
+          var terms: mutable.MutableList[String] = mutable.MutableList()
+          var nouns: mutable.MutableList[String] = mutable.MutableList()
+
+          tree.children.foreach { children =>
+            children.foreach { child =>
+              if (child.value.matches("^NN[A-Z]*")) {
+                child.children.flatMap(c => c.headOption.map(_.value)).foreach(nouns += _)
+              } else {
+                if (nouns.nonEmpty) {
+                  println(s"Using nouns: $nouns")
+                  terms += nouns.mkString(" ")
+                  nouns = mutable.MutableList()
+                }
+                if (!child.isLeaf) terms ++= getTerms(child)
+              }
+            }
+          }
+          if (nouns.nonEmpty) terms += nouns.mkString(" ")
+          terms
+        }
+
+        val terms = getTerms(tree)
+        println(s"Got terms for sentence: $terms")
+        terms.toList
+      }
+    }.flatten
+    println(s"FINAL: ${t.mkString(" AND ")}")
+
+    //val nouns = lemmaTokenMaps.collect { case (lemma,token) if token.matches("^NN[A-Z]*") => lemma }
+    //println(s"Found nouns: $t")
+    if (t.nonEmpty) Some(SearchTopic(t.toList)) else None
   }
 }

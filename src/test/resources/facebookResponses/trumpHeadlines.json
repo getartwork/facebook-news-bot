@@ -1,0 +1,150 @@
+[
+  {
+    "recipient":{
+      "id":"headlines_test"
+    },
+    "message":{
+      "text":"Here are the latest stories about Donald Trump",
+      "attachment":null,
+      "quick_replies":null,
+      "metadata":null
+    },
+    "sender_action":null,
+    "notification_type":null
+  },
+  {
+    "recipient":{
+      "id":"headlines_test"
+    },
+    "message":{
+      "text":null,
+      "attachment":{
+        "type":"template",
+        "payload":{
+          "template_type":"generic",
+          "text":null,
+          "elements":[
+            {
+              "title":"Suicide hotline calls reached record high as Trump victory became clear",
+              "item_url":"https://www.theguardian.com/us-news/2016/nov/12/suicide-prevention-hotline-record-calls-donald-trump-victory-lgbt?CMP=fb_newsbot",
+              "image_url":"https://media.guim.co.uk/802a0c4a563bc26e414bf62b4fc21ce5769dd3c5/0_346_5184_3110/1000.jpg",
+              "subtitle":"National Suicide Prevention Lifeline saw record 660 calls between 1am and 2am on Wednesday, amid particular concerns linked to LGBT community",
+              "buttons":[
+                {
+                  "type":"element_share",
+                  "title":null,
+                  "url":null,
+                  "payload":null
+                }
+              ]
+            },
+            {
+              "title":"‘It started getting scary’: how the mood changed at the Clinton election party",
+              "item_url":"https://www.theguardian.com/us-news/2016/nov/12/mood-hillary-clinton-election-party-changed-things-started-getting-crazy?CMP=fb_newsbot",
+              "image_url":"https://media.guim.co.uk/e0cdc1775108ef4cb06f1ad05806524ee1760a58/0_226_6145_3687/1000.jpg",
+              "subtitle":"The gathering at New York’s Javits convention centre began in a celebratory mood. Three women who were there recall what happened next",
+              "buttons":[
+                {
+                  "type":"element_share",
+                  "title":null,
+                  "url":null,
+                  "payload":null
+                }
+              ]
+            },
+            {
+              "title":"Nervous about a Trump presidency? Me too. But at least I've got legal weed",
+              "item_url":"https://www.theguardian.com/lifeandstyle/2016/nov/12/legal-marijuana-weed-high-times-2016-election?CMP=fb_newsbot",
+              "image_url":"https://media.guim.co.uk/5df8c63768f12807b338c433187a136acd213698/0_144_5200_3120/1000.jpg",
+              "subtitle":"Writer and cannabis consultant David Bienenstock reflects on a night of progressive marijuana legislation – in the face of regressive everything else",
+              "buttons":[
+                {
+                  "type":"element_share",
+                  "title":null,
+                  "url":null,
+                  "payload":null
+                }
+              ]
+            },
+            {
+              "title":"USA and Mexico soccer fans get on just fine, despite the awkward politics",
+              "item_url":"https://www.theguardian.com/football/2016/nov/12/usa-mexico-soccer-fans-donald-trump?CMP=fb_newsbot",
+              "image_url":"https://media.guim.co.uk/73eeba8441f00a4eb11fd2b3ae41817806fa8725/0_82_4446_2668/1000.jpg",
+              "subtitle":"Donald Trump’s election victory raised the prospect of added tension at Friday’s World Cup qualifier, but the game in Columbus went off without a hitch",
+              "buttons":[
+                {
+                  "type":"element_share",
+                  "title":null,
+                  "url":null,
+                  "payload":null
+                }
+              ]
+            },
+            {
+              "title":"Donald Trump appears to soften on Clinton emails and Obamacare",
+              "item_url":"https://www.theguardian.com/us-news/2016/nov/12/donald-trump-appears-to-soften-stance-on-range-of-pledges?CMP=fb_newsbot",
+              "image_url":"https://media.guim.co.uk/b250b829104b4f94af3a02129cf20a5c81654f96/0_0_5000_3000/1000.jpg",
+              "subtitle":"In first interview since winning election, Trump says he may not repeal Obamacare and Clinton’s prosecution not a priority",
+              "buttons":[
+                {
+                  "type":"element_share",
+                  "title":null,
+                  "url":null,
+                  "payload":null
+                }
+              ]
+            }
+          ],
+          "buttons":null
+        }
+      },
+      "quick_replies":[
+        {
+          "content_type":"text",
+          "title":"More stories",
+          "payload":"more",
+          "image_url":null
+        },
+        {
+          "content_type":"text",
+          "title":"Politics",
+          "payload":"politics",
+          "image_url":null
+        },
+        {
+          "content_type":"text",
+          "title":"Football",
+          "payload":"football",
+          "image_url":null
+        },
+        {
+          "content_type":"text",
+          "title":"Lifestyle",
+          "payload":"lifestyle",
+          "image_url":null
+        },
+        {
+          "content_type":"text",
+          "title":"Sport",
+          "payload":"sport",
+          "image_url":null
+        },
+        {
+          "content_type":"text",
+          "title":"Tech",
+          "payload":"tech",
+          "image_url":null
+        },
+        {
+          "content_type":"text",
+          "title":"Support the Guardian",
+          "payload":"support",
+          "image_url":null
+        }
+      ],
+      "metadata":null
+    },
+    "sender_action":null,
+    "notification_type":null
+  }
+]
