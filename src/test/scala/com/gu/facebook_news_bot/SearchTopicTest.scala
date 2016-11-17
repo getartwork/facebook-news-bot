@@ -19,13 +19,18 @@ class SearchTopicTest extends FunSpec with Matchers {
     topic.get.terms should be(List("clinton","trump","election"))
   }
 
-  it("should extract Donald, Trump") {
-    val topic = SearchTopic("Donald or Trump?")
-    topic.get.terms should be(List("Donald", "Trump"))
+  it("should extract Obama, Trump") {
+    val topic = SearchTopic("Obama and Trump")
+    topic.get.terms should be(List("Obama", "Trump"))
   }
 
   it("should extract Donald Trump") {
     val topic = SearchTopic("Donald Trump?")
     topic.get.terms should be(List("Donald Trump"))
+  }
+
+  it("should extract the election") {
+    val topic = SearchTopic("tell me about the election")
+    topic.get.terms should be(List("election"))
   }
 }

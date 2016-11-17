@@ -18,8 +18,7 @@ import de.heikoseeberger.akkahttpcirce.CirceSupport
 import io.circe.generic.auto._
 import com.gu.facebook_news_bot.state.StateHandler
 import com.gu.facebook_news_bot.stores.UserStore
-import com.gu.facebook_news_bot.utils.{JsonHelpers, Verification}
-import com.gu.facebook_news_bot.utils.{KinesisAppenderConfig, LogStash}
+import com.gu.facebook_news_bot.utils._
 import com.gu.facebook_news_bot.utils.Loggers._
 
 import scala.concurrent.duration._
@@ -176,7 +175,7 @@ object Bot extends App with BotService {
     case true => system.actorOf(MorningBriefingPoller.props(userStore, capi, facebook))
   }
 
-  SearchTopic.warmUp
+  Parser.warmUp
 
   val bindingFuture = Http().bindAndHandle(routes, "0.0.0.0", BotConfig.port)
 }
