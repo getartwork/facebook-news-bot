@@ -60,7 +60,7 @@ Mappings:
             MinSize: 1
             MaxSize: 2
             DesiredCapacity: 1
-            InstanceType: t2.micro
+            InstanceType: t2.medium
 
 Resources:
     FacebookNewsBotRole:
