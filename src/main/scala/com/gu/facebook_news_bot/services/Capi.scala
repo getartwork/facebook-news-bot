@@ -99,8 +99,7 @@ object CapiCache {
 
 object Topic {
   def getTopic(text: String): Option[Topic] = {
-    val lower = text.toLowerCase
-    val topic = TopicList.find(topic => topic.pattern.findFirstIn(text).isDefined)
+    val topic = TopicList.find(topic => topic.pattern.findFirstIn(text.toLowerCase).isDefined)
     topic.orElse(SearchTopic(text)) //Uppercase chars can help with finding proper nouns
   }
 
@@ -197,13 +196,12 @@ case class SearchTopic(terms: List[String]) extends Topic {
     q
   }
 
-  //Store full query params in dynamodb
-  override def name: String = terms.mkString(" AND ")
+  override def name: String = terms.mkString(", ")
 }
 object SearchTopic {
   def apply(text: String): Option[SearchTopic] = {
     val filtered = text.replaceAll("([hH]+eadlines|[nN]+ews|[sS]+tories|[pP]+opular)","")
     val nouns = Parser.getNouns(filtered)
-    if (nouns.nonEmpty) Some(SearchTopic(nouns)) else None
+    if (nouns.nonEmpty) Some(SearchTopic(nouns.distinct)) else None
   }
 }
