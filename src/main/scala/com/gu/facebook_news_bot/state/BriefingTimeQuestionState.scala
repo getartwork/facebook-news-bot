@@ -21,7 +21,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 case object BriefingTimeQuestionState extends State {
   val Name = "BRIEFING_TIME_QUESTION"
 
-  val ValidTimes = Seq("6", "7", "8")
+  val ValidTimes = Seq("7", "8", "9")
 
   private case class BriefingTimeEvent(id: String, event: String = "subscribe", _eventName: String = "subscribe", time: String) extends LogEvent
 

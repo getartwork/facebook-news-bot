@@ -32,7 +32,7 @@ object ResponseText {
 
   def menu = "How can I help?"
 
-  def briefingTimeQuestion = "When would you like your morning briefing delivered? You can choose from 6, 7 or 8am."
+  def briefingTimeQuestion = "When would you like your morning briefing delivered? You can choose from 7, 8 or 9am."
 
   def subscribeQuestion = "Would you like to subscribe to the daily morning briefing?"
 
