@@ -33,6 +33,7 @@ case object MainState extends State {
     val suggest = """(^|\W)suggest($|\W)""".r.unanchored
     val feedback = """(^|\W)feedback($|\W)""".r.unanchored
     val support = """(^|\W)support($|\W)""".r.unanchored
+    val changeEdition = """(^|\W)edition($|\W)""".r.unanchored
   }
 
   private sealed trait Event
@@ -162,6 +163,7 @@ case object MainState extends State {
       case Patterns.suggest(_,_) => Some(SuggestEvent)
       case Patterns.feedback(_,_) => Some(FeedbackEvent)
       case Patterns.support(_,_) => Some(SupportEvent)
+      case Patterns.changeEdition(_,_) => Some(ChangeEditionEvent)
       case _ => None
     }
 
@@ -203,6 +205,7 @@ case object MainState extends State {
       MessageToFacebook.QuickReply(title = Some("Headlines"), payload = Some("headlines")),
       MessageToFacebook.QuickReply(title = Some("Most popular"),payload = Some("popular")),
       MessageToFacebook.QuickReply(title = Some("Manage subscriptions"),payload = Some("subscription")),
+      MessageToFacebook.QuickReply(title = Some("Change edition"), payload = Some("edition")),
       MessageToFacebook.QuickReply(title = Some("Suggest something"),payload = Some("suggest")),
       MessageToFacebook.QuickReply(title = Some("Give us feedback"),payload = Some("feedback")),
       FacebookMessageBuilder.supportUsQuickReply

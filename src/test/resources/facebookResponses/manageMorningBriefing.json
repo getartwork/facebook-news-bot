@@ -12,11 +12,6 @@
       },
       {
         "content_type":"text",
-        "title":"Change edition",
-        "payload":"edition"
-      },
-      {
-        "content_type":"text",
         "title":"Unsubscribe",
         "payload":"unsubscribe"
       }

@@ -15,7 +15,6 @@ object ManageMorningBriefingState extends State {
     State.getUserInput(messaging).flatMap { text =>
       val lower = text.toLowerCase
       if (lower.contains("time")) Some(BriefingTimeQuestionState.question(user))
-      else if (lower.contains("edition")) Some(EditionQuestionState.question(user))
       else if (lower.contains("unsubscribe")) Some(MainState.unsubscribe(user))
       else None
     } getOrElse State.unknown(user)
@@ -27,7 +26,6 @@ object ManageMorningBriefingState extends State {
     } else {
       val quickReplies = Seq(
         MessageToFacebook.QuickReply(title = Some("Change time"), payload = Some("time")),
-        MessageToFacebook.QuickReply(title = Some("Change edition"), payload = Some("edition")),
         MessageToFacebook.QuickReply(title = Some("Unsubscribe"), payload = Some("unsubscribe"))
       )
 
