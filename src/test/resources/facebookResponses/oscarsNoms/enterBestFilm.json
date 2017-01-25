@@ -1,0 +1,8 @@
+{
+  "recipient":{
+    "id":"oscars_noms_test"
+  },
+  "message":{
+    "text":"You guessed Moonlight for Best Picture."
+  }
+}

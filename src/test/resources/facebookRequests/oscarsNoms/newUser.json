@@ -1,0 +1,24 @@
+{
+  "entry" : [
+    {
+      "id" : "blah",
+      "time" : 0,
+      "messaging" : [
+        {
+          "referral": {
+            "ref": "oscars_noms",
+            "source": "source",
+            "type": "type"
+          },
+          "sender" : {
+            "id" : "oscars_noms_test"
+          },
+          "recipient" : {
+            "id" : "1"
+          },
+          "timestamp" : 0
+        }
+      ]
+    }
+  ]
+}

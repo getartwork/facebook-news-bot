@@ -31,10 +31,12 @@ object StateHandler {
     FootballTransferStates.EnterTeamsState,
     FootballTransferStates.ManageFootballTransfersState,
     FootballTransferStates.RemoveTeamState,
+    OscarsNomsStates.InitialQuestionState,
+    OscarsNomsStates.EnterNomsState,
     UnsubscribeState)
     .map((state: State) => (state.Name, state))
     .toMap + (StateHandler.NewUserStateName -> SubscribeQuestionState)
-  
+
   private def getStateFromString(state: String): State = States.getOrElse(state.toUpperCase, MainState)
 
   private def localToFront(locale: String): String = {
@@ -91,6 +93,7 @@ class StateHandler(facebook: Facebook, capi: Capi, store: UserStore) {
     State.log(ReferralEvent(id = user.ID, referrer = referral.ref))
     referral.ref match {
       case "football_transfers" => Some(FootballTransferStates.InitialQuestionState.question(user))
+      case "oscars_noms" => Some(OscarsNomsStates.InitialQuestionState.question(user))
       case _ => None
     }
   }
@@ -104,4 +107,31 @@ class StateHandler(facebook: Facebook, capi: Capi, store: UserStore) {
         throw GetUserException(other)
     }
   }
+
+  private def getStateFromString(state: String): State = state.toUpperCase match {
+    case StateHandler.NewUserStateName => SubscribeQuestionState
+    case SubscribeQuestionState.Name => SubscribeQuestionState
+    case BriefingTimeQuestionState.Name => BriefingTimeQuestionState
+    case EditionQuestionState.Name => EditionQuestionState
+    case FeedbackState.Name => FeedbackState
+    case ManageMorningBriefingState.Name => ManageMorningBriefingState
+    case FootballTransferStates.InitialQuestionState.Name => FootballTransferStates.InitialQuestionState
+    case FootballTransferStates.EnterTeamsState.Name => FootballTransferStates.EnterTeamsState
+    case FootballTransferStates.ManageFootballTransfersState.Name => FootballTransferStates.ManageFootballTransfersState
+    case FootballTransferStates.RemoveTeamState.Name => FootballTransferStates.RemoveTeamState
+    case OscarsNomsStates.InitialQuestionState.Name => OscarsNomsStates.InitialQuestionState
+    case OscarsNomsStates.EnterNomsState.Name => OscarsNomsStates.EnterNomsState
+    case UnsubscribeState.Name => UnsubscribeState
+    case _ => MainState
+  }
+
+  private def localToFront(locale: String): String = {
+    locale match {
+      case "en_GB" => "uk"
+      case "en_US" => "us"
+      case "en_UD" => "au"
+      case _ => "international"
+    }
+  }
+
 }

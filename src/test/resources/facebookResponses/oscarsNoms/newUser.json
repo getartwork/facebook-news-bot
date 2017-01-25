@@ -1,0 +1,20 @@
+{
+  "recipient":{
+    "id":"oscars_noms_test"
+  },
+  "message":{
+    "text":"Hi, I'm the Guardian chatbot. Would you like to play our Oscars Predictions game?",
+    "quick_replies":[
+      {
+        "content_type":"text",
+        "title":"Yes",
+        "payload":"yes"
+      },
+      {
+        "content_type":"text",
+        "title":"No",
+        "payload":"no"
+      }
+    ]
+  }
+}
